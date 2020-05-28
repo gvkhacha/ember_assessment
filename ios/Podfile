@@ -43,4 +43,6 @@ target 'emberassessment' do
 
   # react-native-cli autolinking
   use_native_modules!
+  pod 'RNSecureRandom', :path => '../node_modules/react-native-securerandom'
+
 end
