@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import {useState} from 'react';
 
 import {Text, StyleSheet, Button, View, AsyncStorage} from 'react-native';
+import Clipboard from "@react-native-community/clipboard";
 
 import { generateSecureRandom } from 'react-native-securerandom';
 
@@ -30,7 +31,11 @@ const Wallet = () => {
     }, []);
 
     const copyPublicAddr = () => {
-        console.log("public addr", pubAddr);
+        Clipboard.setString(pubAddr);
+    }
+
+    const copyPrivateAddr = () => {
+        Clipboard.setString(privAddr);
     }
 
     const togglePrivAddr = () => {
@@ -56,10 +61,13 @@ const Wallet = () => {
 
     return (
         <>
-            <Text>This is your ETH Wallet</Text>
         <View>
             <View>
-                <Text style={styles.addrText}>
+                <Text style={styles.walletTitle}>This is your ETH Wallet</Text>
+            </View>
+            <View style={{marginBottom: 20}}>
+                <Text style={styles.addrTitle}>Public Key</Text>
+                <Text style={styles.addrText} selectable={true}>
                     {pubAddr}
                 </Text>
                 <Button 
@@ -67,18 +75,32 @@ const Wallet = () => {
                     onPress={copyPublicAddr}
                 />
             </View>
-            <View>
-                <Text style={styles.addrText}>
+            <View style={{width: '80%'}}>
+                <Text style={styles.addrTitle}>Private Key</Text>
+                <Text style={styles.addrText} selectable={true} ellipsizeMode={'middle'}>
                     {hidePrivate ? '*'.repeat(42) : privAddr}
                 </Text>
-                <Button 
-                    title={(hidePrivate ? "Show " : "Hide ") + "Private Address"}
-                    onPress={togglePrivAddr}
-                />
+                <View>
+                    <View>
+                        <Button 
+                            title="Click to copy"
+                            onPress={copyPrivateAddr}
+                            style={styles.privateBtns}
+                        />
+                    </View>
+                    <View style={{marginTop: 10, marginBottom: 50}}>
+                        <Button 
+                            title={(hidePrivate ? "Show " : "Hide ") + "Private Address"}
+                            onPress={togglePrivAddr}
+                            style={styles.privateBtns}
+                        />
+                    </View>
+                </View>
             </View>
             <Button
                 title="Reset Wallet"
                 onPress={resetWallet}
+                style={styles.resetBtn}
             />
         </View>
         </>
@@ -86,8 +108,34 @@ const Wallet = () => {
 }
 
 const styles = StyleSheet.create({
+    walletTitle: {
+        fontSize: 18,
+        textAlign: "center",
+        paddingBottom: 100,
+        color: '#000000',
+        fontWeight: 'bold'
+    },
+    addrTitle: {
+        fontSize: 16,
+        color: '#000000',
+        fontWeight: 'bold'
+    },
     addrText: {
-        textAlign: 'center'
+        textAlign: 'center',
+        marginTop: 5,
+        marginBottom: 5,
+    },
+    privateBtns: {
+        width: '20%',
+        marginTop: 20
+    },
+    privateBtnContainer: {
+        flex: 1,
+        flexDirection: 'row',
+        height: 200
+    },
+    resetBtn: {
+        marginTop: 100
     }
 })
 
