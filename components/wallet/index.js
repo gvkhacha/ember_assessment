@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import {useState} from 'react';
 
-import {Text, StyleSheet, Button, View, AsyncStorage} from 'react-native';
+import {Text, StyleSheet, Button, View, AsyncStorage, Alert} from 'react-native';
 import Clipboard from "@react-native-community/clipboard";
 
 import { generateSecureRandom } from 'react-native-securerandom';
@@ -13,19 +13,26 @@ async function csprng(bytes){
     return randomBytes.toString('hex');
 }
 
+// will likely be an async function that
+// not sure how react-native-securerandom if thats true entropy
+function entropyString(){
+    return "tempfakeentropy";
+}
+
+const password = "tempfakepassword"; //not considering passwords at all
+
 const Wallet = () => {
-    const [pubAddr, setPubAddr] = useState('0x32Be343B94f860124dC4fEe278FDCBD38C102D88');
-    const [privAddr, setPrivAddr] = useState('0x32Be343B94f860124dC4fEe278FDCBD38C102D88');
+    const [pubAddr, setPubAddr] = useState('0x0000000000000000000000000000000000000000');
+    const [privAddr, setPrivAddr] = useState('0x0000000000000000000000000000000000000000000000000000000000000000');
     const [hidePrivate, setHidePrivate] = useState(false);
 
     useEffect(() => {
         AsyncStorage.getItem("wallet")
             .then(data => {
-                console.log(data);
                 if (data != null){
-                    const fields = data.split(";");
-                    setPubAddr(fields[0]);
-                    setPrivAddr(fields[1]);
+                    const keystore = new wallet.Keystore().restorefromSerialized(data)
+                    setPubAddr(keystore.getAddress());
+                    setPrivAddr(keystore.getPrivateKey(password));
                 }
             })
     }, []);
@@ -44,19 +51,39 @@ const Wallet = () => {
 
     const resetWallet = () => {
         const keystore = new wallet.Keystore(csprng);
-        keystore.initializeFromEntropy("tempfakeentropy", "tempfakepassword")
+        keystore.initializeFromEntropy(entropyString(), password)
             .then(result => {
-                const publicAddr = result.getAddress();
-                const privateAddr = result.getPrivateKey("tempfakepassword");
-
                 setPubAddr(result.getAddress());
-                setPrivAddr(result.getPrivateKey("tempfakepassword"));
+                setPrivAddr(result.getPrivateKey(password));
 
-                const data = publicAddr + ";" + privateAddr;
+                // Also, probably a bad way to store data.
+                // Should likely be encrypted/decrypted through eth-wallet's keystore
+                // but passwords are not being considered at all right now.
+                const data = keystore.serialize();
                 AsyncStorage.setItem("wallet", data, err => {
-                    console.log(err);
+                    if(err){
+                        console.log(err);
+                    }
                 });
             })
+    }
+
+    const resetWalletAlert = () => {
+        Alert.alert(
+            "Reset Wallet",
+            "Are you sure you want to generate new keys. Existing data will be destroyed.",
+            [
+                {
+                    text: "Yes",
+                    onPress: resetWallet,
+                    style: "destructive"
+                },
+                {
+                    text: "No",
+                    style: "cancel",
+                }
+            ]
+        )
     }
 
     return (
@@ -78,7 +105,7 @@ const Wallet = () => {
             <View style={{width: '80%'}}>
                 <Text style={styles.addrTitle}>Private Key</Text>
                 <Text style={styles.addrText} selectable={true} ellipsizeMode={'middle'}>
-                    {hidePrivate ? '*'.repeat(42) : privAddr}
+                    {hidePrivate ? '0x' + '0'.repeat(64) : privAddr}
                 </Text>
                 <View>
                     <View>
@@ -99,7 +126,7 @@ const Wallet = () => {
             </View>
             <Button
                 title="Reset Wallet"
-                onPress={resetWallet}
+                onPress={resetWalletAlert}
                 style={styles.resetBtn}
             />
         </View>
